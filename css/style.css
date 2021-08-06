@@ -13,7 +13,7 @@ nav li {
     margin-right: 15px;   /* 15px entre chaque élemenents */ 
 }
 
-#page
+#main
 {
     width: 95%;
     margin: auto;
@@ -39,7 +39,7 @@ nav li {
 }
 
 .list{
-    border: 1px solid green;
+    /* border: 1px solid green; */
     display: flex;
     flex-direction: row;
     justify-content: space-around;
@@ -56,22 +56,17 @@ nav li {
 .element{
     margin-top: 20px;* 
     margin-right: 1px;
-    border: 1px solid blue;
+/*    border: 1px solid blue; */
 }
 
-
-section {
-    border: 1px solid blueviolet;
-}
 
 .list .titre {
     /* float:  left; */
     /*height: 15px; */
     /* display: inline-block; */
     /* vertical-align: top; */
-
     align-self: flex-start;
-    border: 1px solid red; 
+    /* border: 1px solid red;  */
 }
 
 .arrow__btn {
@@ -79,20 +74,21 @@ section {
       text-decoration: none;
       font-size: 6em;
       background:rgb(0,0,0);
-      /* position: absolute;
+      /* position: absolute; */
       width: 80px;
-      padding: 20px;
+      margin-top: auto;
+      margin-bottom: auto;
+      padding: 40px;
       text-align: center;
-      z-index: 1; */
+      /* z-index: 1;  */
     }
 
     .left-arrow {
-      /* top:0; bottom:0; left:0; */
+      /* border: 1px solid red; */
       background: linear-gradient(-90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
     }
     
     .right-arrow {
-      /* top:0; bottom:0; right: 0; */
       background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
     }
 

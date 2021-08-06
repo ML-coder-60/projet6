@@ -3,6 +3,14 @@ const UriGenres = 'api/v1/genres/';
 const UriTitles = 'api/v1/titles/';
 const UrlGenres = UrlApiOCMovies+UriGenres;
 const UrlTitles = UrlApiOCMovies+UriTitles;
+const GenresDisplayNumber = {
+	"Meilleur Film":1,
+	"Films les mieux notés":7,
+	"Meilleurs Films d'Animation":7,
+	"Meilleurs Films d'Adventure":7,
+	"Meilleurs Films d'Adult":7
+};
+const DefaultNbrDisplay = 4;
 
 
 class DataMovie {
@@ -71,32 +79,100 @@ const CreateUrlSearchApi  = async function(genre) {
 const BestMovieData= async function (NumberMovie,Genre = false){
 	let ArrayDataMovie = []; 
 	let UrlSearch = await CreateUrlSearchApi(Genre);
-	let NumberPages = await MaxPage(await GetDataMovie(UrlSearch))
+	let NumberPages = await MaxPage(await GetDataMovie(UrlSearch));
 	// While NumberMovie > ArrayDataMovie.length and NumberPages > 0 get data Movie from Api 
 	while (NumberMovie > ArrayDataMovie.length && NumberPages >0 ){
 		const Urlpages = UrlSearch+'&page='+NumberPages;
 		data = await GetDataMovie(Urlpages);
 		// Add data Movie from page NumberPages in ArrayDataMovie
 		for (let result  of data.results){
-			ArrayDataMovie.push( new DataMovie(result))
+			ArrayDataMovie.push( new DataMovie(result));
 		}
 		// Select Pages next
 		NumberPages -= 1;
 	}
 	// sort Movie by imdb_score
-	ArrayDataMovie.sort((a,b) =>  b.imdb_score-a.imdb_score )
-	// select NumberMovie Best NumberMovie
-	ArrayDataMovie.length = NumberMovie;
-	console.log(ArrayDataMovie)
+	ArrayDataMovie.sort((a,b) =>  b.imdb_score-a.imdb_score );
+	// Cut ArrayDataMovie if  number >  NumberMovie
+	if (ArrayDataMovie.length > NumberMovie){
+		ArrayDataMovie.length = NumberMovie;
+	}
+	return ArrayDataMovie;
+}
+
+const DisplayLelftArrow = async function(newSection){
+	const lelftArrow = document.createElement("a");
+	lelftArrow.classList.add("arrow__btn");
+	lelftArrow.classList.add("left-arrow");
+	lelftArrow.innerHTML = "<";
+	newSection.appendChild(lelftArrow);
+}
+
+const DisplayRightArrow = async function(newSection){
+	const rightArrow = document.createElement("a");
+	rightArrow.classList.add("arrow__btn");
+	rightArrow.classList.add("right-arrow");
+	rightArrow.innerHTML = ">";
+	newSection.appendChild(rightArrow);
 }
 
 
+const DisplayGenre = async function(){
 
-//const result = DataMovie(UrlTitles);
-//console.log(result);
+	let elt = document.getElementById("page");
+	let footer = document.getElementById("footer");
 
-const pages = BestMovieData(5,'Adult');
-const pages2 = BestMovieData(7,'Biography');
-const pages3 = BestMovieData(7,'gfggd');
+	for(let key in GenresDisplayNumber) {
+		let nbr = 0; 
+  		let value = GenresDisplayNumber[key];
+  		const genre = key.split('\'')[1];
+  		// get data for genre
+  		const dataGenre = await BestMovieData(value, genre);
+  		// create HTML
 
+
+		const newP = document.createElement("a");
+		newP.classList.add("categorie");
+		newP.innerHTML = key;
+		elt.insertBefore(newP,footer);
+		const newSection = document.createElement("section");
+		newSection.classList.add("list");
+		if (dataGenre.length > DefaultNbrDisplay) {
+			DisplayLelftArrow(newSection);
+		}
+
+
+		for (let data of dataGenre) {
+			nbr +=1 ;
+			console.log(data);
+			console.log(data.title);
+			// display number default movie
+			if (nbr <= DefaultNbrDisplay){
+				const newDiv = document.createElement("div");
+				newDiv.classList.add("element");
+				const alt = data.title;
+				newDiv.innerHTML = "<img alt='"+data.title+"' src="+data.image_url+ ">";
+				newSection.appendChild(newDiv);
+				elt.insertBefore(newSection,footer);
+			}
+
+		}
+		if (dataGenre.length > DefaultNbrDisplay) {
+			DisplayRightArrow(newSection);
+		}
+
+	}
+}
+
+
+//for(var key in GenresDisplayNumber) {
+//  var value = GenresDisplayNumber[key];
+//  console.log(value+':'+key);
+//  const genre = key.split('\'')[1];
+//  const dataGenre = await BestMovieData(value, genre);
+//  DisplayGenre(dataGenre,key);
+//}
+
+
+DisplayGenre();
 
