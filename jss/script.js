@@ -12,6 +12,7 @@ const GenresDisplayNumber = {
 const DefaultNbrDisplay = 4;
 const DataBestMovieByGenre = []; 
 
+const footer = document.getElementById("footer");
 
 class DataMovie {
 	constructor(data){
@@ -36,6 +37,8 @@ class DataGenre {
 		this.datamovie = data;
 	}
 }
+
+
 
 const MaxPage = async function(data){
 	let NumberPages = 1;
@@ -107,7 +110,7 @@ const GetDataBestMovieByGenre = async function (NumberMovie,Genre = false){
 	return ArrayDataMovie;
 }
 
-const DisplayLelftArrow = async function(newSection,data){
+const DisplayLelftArrow = function(newSection,data){
 	if (data.length > DefaultNbrDisplay){
 		const lelftArrow = document.createElement("div");
 		lelftArrow.classList.add("arrow__btn");
@@ -117,7 +120,7 @@ const DisplayLelftArrow = async function(newSection,data){
 	}
 }
 
-const DisplayRightArrow = async function(newSection,data){
+const DisplayRightArrow = function(newSection,data){
 	if (data.length > DefaultNbrDisplay){
 		const rightArrow = document.createElement("div");
 		rightArrow.classList.add("arrow__btn");
@@ -127,32 +130,27 @@ const DisplayRightArrow = async function(newSection,data){
 	}
 }
 
-const DisplayFilm = async function(data,section){
+const DisplayFilm = function(data,section){
 	const newFilm = document.createElement("div");
 	newFilm.classList.add("film");
 	const img = document.createElement("img");
 	img.src = data.image_url;
 	img.alt = data.title;
-	/* img.width = "50"; 
-	img.height = "max"; */
 	newFilm.appendChild(img);
-	/* newFilm.innerHTML = "<img alt='"+data.title+"' src="+data.image_url+ ">"; */
 	section.appendChild(newFilm);
 }
 
-const DisplayTitre = async function(title,section){
+const DisplayTitre = function(title,section){
 	const newDiv =  document.createElement("div");
 	newDiv.classList.add("titre");
 	const newTitle = document.createElement("h1");
 	newTitle.innerHTML = title;
 	newDiv.appendChild(newTitle);
-
 	section.appendChild(newDiv);
 }
 
 
-
-const DisplayGenre = async function(title,dataGenre,page,footer){
+const DisplayGenre = function(title,dataGenre,page){
 	let nbr = 0; 
 
 	const newSection = document.createElement("section");
@@ -169,22 +167,27 @@ const DisplayGenre = async function(title,dataGenre,page,footer){
 			DisplayFilm(data,newDiv);
 		}
 	}
-	
 	DisplayRightArrow(newDiv,dataGenre);
 	newSection.appendChild(newDiv);
 	page.insertBefore(newSection,footer);
 }
 
-const DisplayBestMovie = function(data,page,footer){
+const DisplayBestMovie = function(data,page){
 	const newSection = document.createElement("section");
-	let title  = data[0].genre;
-	let data_movie = data[0].datamovie[0]
-	newSection.id = title;
-    DisplayTitre(title,newSection);
-    const newDiv = document.createElement("div");
-    newDiv.classList.add("list");
-	DisplayFilm(data_movie,newDiv);
+	newSection.id = "BestMovie";
+	let data_movie = data[0].datamovie[0];
+	let newDiv =  document.createElement("div");
+	newDiv.classList.add("information");
+	const information = document.createElement("h1");
+	information.innerHTML = data_movie.title;
+	newDiv.appendChild(information);
+	const play = document.createElement("button");
+	play.classList.add("button");
+	play.classList.add("play");
+	play.innerHTML = "Lecture";
+	newDiv.appendChild(play);
 	newSection.appendChild(newDiv);
+    DisplayFilm(data_movie,newSection);
 	page.insertBefore(newSection,footer);
 }
 
@@ -199,16 +202,54 @@ const GetDataMovie = async function(){
 	}
 }
 
-const Display = async function(){
-	await GetDataMovie();
-	let page = document.getElementById("page");
-	let footer = document.getElementById("footer");
-	DisplayBestMovie(DataBestMovieByGenre,page,footer);
-	for (let data of DataBestMovieByGenre) {
-  		// Display list Film
-  		DisplayGenre(data.genre,data.datamovie,page,footer);
+const FindDataMovieByTitle = function(title){
+	for (let genre of DataBestMovieByGenre) {
+		for (let data_movie of genre.datamovie){
+			if (data_movie.title === title){
+				return data_movie;
+			} 
+		}
 	}
 }
 
-Display();
+const DisplayFilmDetail = function(e){
+	let target = e.srcElement.alt;
+	let data = FindDataMovieByTitle(target);
+	if (data) {
+		const aside = document.createElement("asside");
+		aside.classList.add("describemovie");
+		aside.setAttribute("role","dialog");
+		aside.setAttribute("aria-hidden","true");
+		console.log(data);
+		const para = document.createElement("h1");
+		para.innerHTML =  "Titre: "+data.title;
+		aside.appendChild(para);
+		para.innerHTML = "Score: "+data.imdb_score;
+		aside.appendChild(para);
+		page.insertBefore(aside,footer);
 
+	
+	}
+	console.log(target);
+
+	//document.getElementById("Films les mieux notés").innerHTML = Date();
+	//tell the browser not to respond to the link click
+	//e.preventDefault();
+}
+
+const Display = async function(){
+	await GetDataMovie();
+	let page = document.getElementById("page");
+	DisplayBestMovie(DataBestMovieByGenre,page);
+	for (let data of DataBestMovieByGenre) {
+  		// Display list Film
+  		DisplayGenre(data.genre,data.datamovie,page);
+	}
+
+	document.querySelectorAll(".film").forEach( a => { 
+		a.addEventListener('click', DisplayFilmDetail);
+	})
+	
+}
+
+Display();
