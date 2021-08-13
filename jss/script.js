@@ -1,20 +1,4 @@
-const UrlApiOCMovies = 'http://127.0.0.1:8000/';
-const UriGenres = 'api/v1/genres/';
-const UriTitles = 'api/v1/titles/';
-const UrlGenres = UrlApiOCMovies+UriGenres;
-const UrlTitles = UrlApiOCMovies+UriTitles;
-const GenresDisplayNumber = {
-	"Films les mieux notés":7,
-	"Meilleurs Films d'Animation":7,
-	"Meilleurs Films d'Adventure":7,
-	"Meilleurs Films d'Adult":7
-};
-const DefaultNbrDisplay = 4;
-const DataBestMovieByGenre = []; 
-
-const footer = document.getElementById("footer");
-
-class DataMovie {
+class Film {
 	constructor(data){
 		this.actors = data.actors;
 		this.directors =data.directors;
@@ -31,225 +15,288 @@ class DataMovie {
 	}
 }
 
-class DataGenre {
+class DataFilm {
 	constructor(genre,data){
 		this.genre = genre;
-		this.datamovie = data;
+		this.data = data;
 	}
 }
 
-
-
-const MaxPage = async function(data){
-	let NumberPages = 1;
-	if (data.next = null ) {
-		return NumberPages;
-	} 
-	NumberPages = Math.floor(data.count/5);
-	if (NumberPages == (data.count/5)){
-		return NumberPages;
-	} else {
-		return NumberPages+1;
+class DataApi{
+	constructor(){
+		this.urlApiOCMovies = 'http://127.0.0.1:8000/';
+		this.uriGenres = 'api/v1/genres/';
+		this.uriTitles = 'api/v1/titles/';
+		this.urlGenres = this.urlApiOCMovies+this.uriGenres;
+		this.urlTitles = this.urlApiOCMovies+this.uriTitles;
+		this.numberDisplayGenre = 5;
+		this.genres = new Array(); 
+		this.defaultGenresNumberMovie = {"Best Movies":7};
 	}
-}
 
-const GetDataApi = async function (url){
-	try {
-		let response = await fetch(url);
-		if (response.ok) {
-			let data = await response.json();
-			return data;
+	async getGenre(url=this.urlGenres, numberpage = 1){
+		// search for all genres available on API
+		let data = await this.getData(url+"?page="+numberpage);
+		for (let genre of data.results){
+			this.genres.push(genre.name);
+		}
+		const max_page = this.maxPage(data);
+		if (numberpage < max_page){
+			numberpage += 1;
+			await this.getGenre(url,  numberpage);
+		}
+		return this.genres;
+	}
+
+	async getGenreDisplay(){
+		const number_genre = this.genres.length
+		if (Object.keys(this.defaultGenresNumberMovie).length < this.numberDisplayGenre) {
+			let addGenre  = this.genres[Math.floor((Math.random() * number_genre) + 1)];
+			if (addGenre) { 
+				this.defaultGenresNumberMovie[addGenre]=7;
+			}
+			await this.getGenreDisplay();
+		}
+	}
+
+	maxPage(data){
+		// return the number of the last page 
+		const numberResultByPage = 5;
+		let numberPages = 1;
+		if (data.next = null ) {
+			return numberPages;
+		} 
+		numberPages = data.count/numberResultByPage
+		if (Number.isInteger(numberPages)){
+			return numberPages;
+		} else{
+			return Math.floor(numberPages)+1
+		}
+	}
+
+	async createUrlSearchApi(genre = false) {
+		let urlSearch = this.urlTitles+'?sort_by=imdb_score';
+		// if genre not present/define return UrlSearch
+		if (genre == false) {
+			return  urlSearch;
+		} 
+		// if genre present in this.genres  return 'UrlSearch+'&genre='+genre'
+		// else return UrlSearch
+		if (this.genres.includes(genre)){
+			return urlSearch+'&genre='+genre;
 		} else {
-			console.error('Retour du serveur : ', response.status);
-		}
-
-	} catch (e) {
-		console.log(e);
-	}
-}
-
-const CreateUrlSearchApi  = async function(genre) {
-	let UrlSearch = UrlTitles+'?sort_by=imdb_score';
-	let DataGenre = await GetDataApi(UrlGenres);
-	// if genre not present/define return UrlSearch
-	if (genre == false) {
-		return  UrlSearch;
-	} 
-	// if genre present check genre is prent on api
-	// if present return 'UrlSearch+'&genre='+genre'
-	// else return UrlSearch
-	for ( let GenreApi of  DataGenre.results) {
-		if (GenreApi.name == genre){
-			return UrlSearch+'&genre='+genre;
+			return urlSearch;
 		}
 	}
-	return UrlSearch;
-}
 
-const GetDataBestMovieByGenre = async function (NumberMovie,Genre = false){
-	let ArrayDataMovie = []; 
-	let UrlSearch = await CreateUrlSearchApi(Genre);
-	let NumberPages = await MaxPage(await GetDataApi(UrlSearch));
-	// While NumberMovie > ArrayDataMovie.length and NumberPages > 0 get data Movie from Api 
-	while (NumberMovie > ArrayDataMovie.length && NumberPages > 0 ){
-		const Urlpages = UrlSearch+'&page='+NumberPages;
-		data = await GetDataApi(Urlpages);
-		// Add data Movie from page NumberPages in ArrayDataMovie
-		for (let result  of data.results){
-			ArrayDataMovie.push( new DataMovie(result));
+	async getDataBestMovieByGenre(numberMovie, genre){
+		let arrayDataMovie = new Array();
+		let urlgenre = await this.createUrlSearchApi(genre);
+		let data = await this.getData(urlgenre);
+		let max_page = this.maxPage(data);
+		// While NumberMovie > ArrayDataMovie.length and NumberPages > 0 get data Movie from Api 
+		while (numberMovie > arrayDataMovie.length && max_page > 0 ){
+			const urlpages = urlgenre+'&page='+max_page;
+			data = await this.getData(urlpages);
+			// Add data Movie from page NumberPages in ArrayDataMovie
+			for (let result  of data.results){
+				arrayDataMovie.push( new Film(result));
+			}
+			// Select Pages next
+			max_page -= 1;
 		}
-		// Select Pages next
-		NumberPages -= 1;
+		// sort Movie by imdb_score
+		arrayDataMovie.sort((a,b) =>  b.imdb_score-a.imdb_score );
+		// Cut ArrayDataMovie if  number >  NumberMovie
+		if (arrayDataMovie.length > numberMovie){
+			arrayDataMovie.length = numberMovie;
+		}
+		return new DataFilm(genre, arrayDataMovie);
 	}
-	// sort Movie by imdb_score
-	ArrayDataMovie.sort((a,b) =>  b.imdb_score-a.imdb_score );
-	// Cut ArrayDataMovie if  number >  NumberMovie
-	if (ArrayDataMovie.length > NumberMovie){
-		ArrayDataMovie.length = NumberMovie;
+
+	async getDataMovies(){
+		let data = [];
+		/// load genre off Api
+		await this.getGenre();
+		// add genreDisplay if nbr is < numberDisplayGenre
+		await this.getGenreDisplay();
+		// load best movie by genre
+		for (let genre in this.defaultGenresNumberMovie){
+			data.push(await this.getDataBestMovieByGenre(this.defaultGenresNumberMovie[genre],genre));
+		} 
+		return data;
 	}
-	return ArrayDataMovie;
-}
 
-const DisplayLelftArrow = function(newSection,data){
-	if (data.length > DefaultNbrDisplay){
-		const lelftArrow = document.createElement("div");
-		lelftArrow.classList.add("arrow__btn");
-		lelftArrow.classList.add("left-arrow");
-		lelftArrow.innerHTML = "<";
-		newSection.appendChild(lelftArrow);
-	}
-}
-
-const DisplayRightArrow = function(newSection,data){
-	if (data.length > DefaultNbrDisplay){
-		const rightArrow = document.createElement("div");
-		rightArrow.classList.add("arrow__btn");
-		rightArrow.classList.add("right-arrow");
-		rightArrow.innerHTML = ">";
-		newSection.appendChild(rightArrow);
-	}
-}
-
-const DisplayFilm = function(data,section){
-	const newFilm = document.createElement("div");
-	newFilm.classList.add("film");
-	const img = document.createElement("img");
-	img.src = data.image_url;
-	img.alt = data.title;
-	newFilm.appendChild(img);
-	section.appendChild(newFilm);
-}
-
-const DisplayTitre = function(title,section){
-	const newDiv =  document.createElement("div");
-	newDiv.classList.add("titre");
-	const newTitle = document.createElement("h1");
-	newTitle.innerHTML = title;
-	newDiv.appendChild(newTitle);
-	section.appendChild(newDiv);
-}
-
-
-const DisplayGenre = function(title,dataGenre,page){
-	let nbr = 0; 
-
-	const newSection = document.createElement("section");
-	newSection.id = title;
-    DisplayTitre(title,newSection);
-    const newDiv = document.createElement("div");
-    newDiv.classList.add("list");
-    DisplayLelftArrow(newDiv,dataGenre);
-	for (let data of dataGenre) {
-		nbr +=1 ;
-		// display number default movie
-
-		if (nbr <= DefaultNbrDisplay){
-			DisplayFilm(data,newDiv);
+	async getData(url){
+		console.log(url);
+		try {
+			let response = await fetch(url);
+			if (response.ok) {
+				return await response.json();
+			} else {
+				console.error('Retour du serveur : ', response.status);
+			}
+		} catch (e) {
+			console.log(e);
 		}
 	}
-	DisplayRightArrow(newDiv,dataGenre);
-	newSection.appendChild(newDiv);
-	page.insertBefore(newSection,footer);
-}
 
-const DisplayBestMovie = function(data,page){
-	const newSection = document.createElement("section");
-	newSection.id = "BestMovie";
-	let data_movie = data[0].datamovie[0];
-	let newDiv =  document.createElement("div");
-	newDiv.classList.add("information");
-	const information = document.createElement("h1");
-	information.innerHTML = data_movie.title;
-	newDiv.appendChild(information);
-	const play = document.createElement("button");
-	play.classList.add("button");
-	play.classList.add("play");
-	play.innerHTML = "Lecture";
-	newDiv.appendChild(play);
-	newSection.appendChild(newDiv);
-    DisplayFilm(data_movie,newSection);
-	page.insertBefore(newSection,footer);
-}
+} 
 
+// const testdisplay = function(data) {
+// 	const information = document.getElementById("footer");
+// 	console.log(information);
+// 	information.innerHTML = data;
+// }
 
-const GetDataMovie = async function(){
-	for(let title in GenresDisplayNumber) {
-  		let nbr = GenresDisplayNumber[title];
-  		const genre = title.split('\'')[1];
-  		// get data Film by genre
-		let data = new DataGenre(title, await GetDataBestMovieByGenre(nbr, genre));
-		DataBestMovieByGenre.push(data);
+class Display{
+	constructor(data){
+		this.defaultNbrDisplay = 4;
+		this.footer = document.getElementById("footer");
+		this.page = document.getElementById("page");
+		this.data = data;
+		this.indexDisplay = 0;
 	}
-}
 
-const FindDataMovieByTitle = function(title){
-	for (let genre of DataBestMovieByGenre) {
-		for (let data_movie of genre.datamovie){
-			if (data_movie.title === title){
-				return data_movie;
-			} 
+	findDataMovieByTitle(title){
+		for (let genre of this.data) {
+			for (let data_movie of genre.data){
+				if (data_movie.title === title){
+					return data_movie;
+				} 
+			}
 		}
 	}
-}
 
-const DisplayFilmDetail = function(e){
-	let target = e.srcElement.alt;
-	let data = FindDataMovieByTitle(target);
-	if (data) {
-		const aside = document.createElement("asside");
-		aside.classList.add("describemovie");
-		aside.setAttribute("role","dialog");
-		aside.setAttribute("aria-hidden","true");
-		console.log(data);
-		const para = document.createElement("h1");
-		para.innerHTML =  "Titre: "+data.title;
-		aside.appendChild(para);
-		para.innerHTML = "Score: "+data.imdb_score;
-		aside.appendChild(para);
-		page.insertBefore(aside,footer);
-
+	displayLelftArrow(newSection,data){
+		if (data.length > this.defaultNbrDisplay){
+			const lelftArrow = document.createElement("div");
+			lelftArrow.classList.add("arrow__btn");
+			lelftArrow.classList.add("left-arrow");
+			lelftArrow.innerHTML = "<";
+			newSection.appendChild(lelftArrow);
+		}
+	}
 	
+	displayRightArrow(newSection,data){
+		if (data.length > this.defaultNbrDisplay){
+			const rightArrow = document.createElement("div");
+			rightArrow.classList.add("arrow__btn");
+			rightArrow.classList.add("right-arrow");
+			rightArrow.innerHTML = ">";
+			newSection.appendChild(rightArrow);
+		}
 	}
-	console.log(target);
 
-	//document.getElementById("Films les mieux notés").innerHTML = Date();
-	//tell the browser not to respond to the link click
-	//e.preventDefault();
+	displayFilm(data,section){
+		const newFilm = this.addClassDiv("film");
+		const img = document.createElement("img");
+		img.src = data.image_url;
+		img.alt = data.title;
+		newFilm.appendChild(img);
+		section.appendChild(newFilm);
+	}	
+
+
+	displayBestMovie (){
+		const newSection = document.createElement("section");
+		newSection.id = "BestFilm";
+		let newDiv =  this.addClassDiv("information");
+		const information = document.createElement("h1");
+		information.innerHTML = this.data[0].data[0].title;
+		newDiv.appendChild(information);
+		const play = document.createElement("button");
+		play.classList.add("button");
+		play.classList.add("play");
+		play.innerHTML = "Lecture";
+		newDiv.appendChild(play);
+		newSection.appendChild(newDiv);
+		this.displayFilm(this.data[0].data[0],newSection);
+		page.insertBefore(newSection,footer);
+	}
+
+	displayGenre(dataGenre,page){
+		let nbr = 0; 
+		const newSection = document.createElement("section");
+		newSection.id = dataGenre.genre;
+		this.displayTitre(dataGenre.genre,newSection);
+		const newDiv = this.addClassDiv("list");
+		this.displayLelftArrow(newDiv,dataGenre.data);
+		for (let data of dataGenre.data) {
+			nbr +=1 ;
+			// display number default movie
+	
+			if (nbr <= this.defaultNbrDisplay){
+				this.displayFilm(data,newDiv);
+			}
+		}
+		this.displayRightArrow(newDiv,dataGenre.data);
+		newSection.appendChild(newDiv);
+		page.insertBefore(newSection,footer);
+	}
+
+	displayTitre(title,section){
+		const newDiv =  this.addClassDiv("titre");
+		const newTitle = document.createElement("h1");
+		newTitle.innerHTML = title;
+		newDiv.appendChild(newTitle);
+		section.appendChild(newDiv);
+	}
+
+	addParagraph(test,element){
+		const para = document.createElement("p");
+		para.innerHTML = test;
+		element.appendChild(para);
+
+	}
+	addClassDiv(nameClass){
+		const newDiv =  document.createElement("div");
+		newDiv.classList.add(nameClass);
+		return newDiv;
+	}
+
+	displayFilmDetail(e){
+		let target = e.srcElement.alt;
+		let data = this.findDataMovieByTitle(target);
+		if (data) {
+			const aside = document.createElement("asside");
+			aside.classList.add("describemovie");
+			aside.setAttribute("role","dialog");
+			aside.setAttribute("aria-hidden","true");
+			const detail = this.addClassDiv("detail");
+			console.log(data);
+			this.addParagraph("Titre: "+data.title,detail);
+			this.addParagraph("Score: "+data.imdb_score,detail);
+			aside.appendChild(detail);
+			page.insertBefore(aside,footer);
+		
+		}
+		//document.getElementById("Films les mieux notés").innerHTML = Date();
+		//tell the browser not to respond to the link click
+		//e.preventDefault();
+	}
+
 }
 
-const Display = async function(){
-	await GetDataMovie();
-	let page = document.getElementById("page");
-	DisplayBestMovie(DataBestMovieByGenre,page);
-	for (let data of DataBestMovieByGenre) {
-  		// Display list Film
-  		DisplayGenre(data.genre,data.datamovie,page);
-	}
+async function main(){
 
+	// init load
+	const data = new DataApi();
+	dataMovies = await data.getDataMovies();
+	const display = new Display(dataMovies)
+
+	// display
+	display.displayBestMovie();
+	for (let data of dataMovies) {
+		// Display list Film
+		display.displayGenre(data,page);
+    }
+
+	// events 
 	document.querySelectorAll(".film").forEach( a => { 
-		a.addEventListener('click', DisplayFilmDetail);
-	})
-	
+		//a.addEventListener('click', display.displayFilmDetail(a));
+		a.addEventListener('click', function(e) {display.displayFilmDetail(e)});
+	}) 
 }
 
-Display();
+main();
