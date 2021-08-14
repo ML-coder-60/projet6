@@ -1,17 +1,19 @@
 class Film {
-	constructor(data){
+	constructor(data,detail){
 		this.actors = data.actors;
 		this.directors =data.directors;
 		this.genres = data.genres;
 		this.id = data.id;
 		this.image_url = data.image_url;
 		this.imdb_score = data.imdb_score;
-		this.imdb_url = data.imdb_url;
 		this.title = data.title;
-		this.url = data.url;
-		this.votes = data.votes;
 		this.writers = data.writers;
-		this.year = data.year;
+		this.date_published = detail.date_published;
+		this.duration = detail.duration;
+		this.rated = detail.rated;
+		this.countries = detail.countries;
+		this.reviews_from_critics = detail.reviews_from_critics;
+		this.description = detail.description;
 	}
 }
 
@@ -99,8 +101,11 @@ class DataApi{
 			const urlpages = urlgenre+'&page='+max_page;
 			data = await this.getData(urlpages);
 			// Add data Movie from page NumberPages in ArrayDataMovie
+			console.log(data.results)
 			for (let result  of data.results){
-				arrayDataMovie.push( new Film(result));
+				// get datail Film
+				let detail = await this.getData(this.urlTitles+result.id);
+				arrayDataMovie.push( new Film(result,detail));
 			}
 			// Select Pages next
 			max_page -= 1;
@@ -128,7 +133,6 @@ class DataApi{
 	}
 
 	async getData(url){
-		console.log(url);
 		try {
 			let response = await fetch(url);
 			if (response.ok) {
@@ -140,7 +144,6 @@ class DataApi{
 			console.log(e);
 		}
 	}
-
 } 
 
 // const testdisplay = function(data) {
@@ -266,7 +269,17 @@ class Display{
 			const detail = this.addClassDiv("detail");
 			console.log(data);
 			this.addParagraph("Titre: "+data.title,detail);
-			this.addParagraph("Score: "+data.imdb_score,detail);
+			this.addParagraph("Score Imdb: "+data.imdb_score,detail);
+			this.addParagraph("Genres: "+data.genres,detail);
+			this.addParagraph("Actors: "+data.actors,detail);
+			this.addParagraph("Directors: "+data.directors,detail);
+			this.addParagraph("Date Publiched: "+data.date_published,detail);
+			this.addParagraph("Rated: "+data.rated,detail);
+			this.addParagraph("Duration: "+data.duration,detail);
+			this.addParagraph("Countries: "+data.countries,detail);
+			this.addParagraph("Duration: "+data.duration,detail);
+			this.addParagraph("Reviews from critics: "+data.reviews_from_critics,detail);
+			this.addParagraph("Descripion: "+data.description,detail);
 			aside.appendChild(detail);
 			page.insertBefore(aside,footer);
 		
