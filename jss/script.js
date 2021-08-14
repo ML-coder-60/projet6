@@ -31,7 +31,7 @@ class DataApi{
 		this.uriTitles = 'api/v1/titles/';
 		this.urlGenres = this.urlApiOCMovies+this.uriGenres;
 		this.urlTitles = this.urlApiOCMovies+this.uriTitles;
-		this.numberDisplayGenre = 5;
+		this.numberDisplayGenre = 4;
 		this.genres = new Array(); 
 		this.defaultGenresNumberMovie = {"Best Movies":7};
 	}
@@ -91,6 +91,51 @@ class DataApi{
 		}
 	}
 
+	async getdatafilmsynchro(data){
+		let numberMovie = data.length
+		let datamovies = new Array(numberMovie);
+		switch(numberMovie)
+		{
+			case 1:
+				datamovies = [ await this.addDetailFilm(data[numberMovie-1])];
+				break;
+			case 2:
+				datamovies = [await this.addDetailFilm(data[numberMovie-2]),await this.addDetailFilm(data[numberMovie-1])];
+				break;
+			case 3:
+				datamovies = [
+					await this.addDetailFilm(data[numberMovie-3]),
+					await this.addDetailFilm(data[numberMovie-2]),
+					await this.addDetailFilm(data[numberMovie-1])
+				];
+				break;
+			case 4:
+				datamovies = [
+					await this.addDetailFilm(data[numberMovie-4]),
+					await this.addDetailFilm(data[numberMovie-3]),
+					await this.addDetailFilm(data[numberMovie-2]),
+					await this.addDetailFilm(data[numberMovie-1])
+				];
+				break;
+			default:
+				datamovies = [
+					await this.addDetailFilm(data[numberMovie-5]),
+					await this.addDetailFilm(data[numberMovie-4]),
+					await this.addDetailFilm(data[numberMovie-3]),
+					await this.addDetailFilm(data[numberMovie-2]),
+					await this.addDetailFilm(data[numberMovie-1])
+				];
+				break;
+
+		}
+		return datamovies;
+	}
+
+	async addDetailFilm(data){
+		let detail = await this.getData(this.urlTitles+data.id);
+		return new Film(data,detail);
+	}
+
 	async getDataBestMovieByGenre(numberMovie, genre){
 		let arrayDataMovie = new Array();
 		let urlgenre = await this.createUrlSearchApi(genre);
@@ -101,12 +146,8 @@ class DataApi{
 			const urlpages = urlgenre+'&page='+max_page;
 			data = await this.getData(urlpages);
 			// Add data Movie from page NumberPages in ArrayDataMovie
-			console.log(data.results)
-			for (let result  of data.results){
-				// get datail Film
-				let detail = await this.getData(this.urlTitles+result.id);
-				arrayDataMovie.push( new Film(result,detail));
-			}
+			const clone_array = [].concat(arrayDataMovie);
+			arrayDataMovie = clone_array.concat( await this.getdatafilmsynchro(data.results));
 			// Select Pages next
 			max_page -= 1;
 		}
@@ -126,9 +167,15 @@ class DataApi{
 		// add genreDisplay if nbr is < numberDisplayGenre
 		await this.getGenreDisplay();
 		// load best movie by genre
-		for (let genre in this.defaultGenresNumberMovie){
-			data.push(await this.getDataBestMovieByGenre(this.defaultGenresNumberMovie[genre],genre));
-		} 
+		let GenresNumberMovie = this.defaultGenresNumberMovie;
+		let keys = Object.keys(GenresNumberMovie);
+		data = [ 
+			await this.getDataBestMovieByGenre(GenresNumberMovie[keys[0]],keys[0]),
+			await this.getDataBestMovieByGenre(GenresNumberMovie[keys[1]],keys[1]),
+			await this.getDataBestMovieByGenre(GenresNumberMovie[keys[2]],keys[2]),
+			await this.getDataBestMovieByGenre(GenresNumberMovie[keys[3]],keys[3]),
+
+		]
 		return data;
 	}
 
