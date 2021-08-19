@@ -193,12 +193,6 @@ class DataApi{
 	}
 } 
 
-// const testdisplay = function(data) {
-// 	const information = document.getElementById("footer");
-// 	console.log(information);
-// 	information.innerHTML = data;
-// }
-
 class Display{
 	constructor(data){
 		this.defaultNbrDisplay = 4;
@@ -252,9 +246,7 @@ class Display{
 		const newSection = document.createElement("section");
 		newSection.id = "BestFilm";
 		let newDiv =  this.addClassDiv("information");
-		const information = document.createElement("h1");
-		information.innerHTML = this.data[0].data[0].title;
-		newDiv.appendChild(information);
+		this.addTitre(this.data[0].data[0].title,newDiv);
 		const play = document.createElement("button");
 		play.classList.add("button");
 		play.classList.add("play");
@@ -287,15 +279,19 @@ class Display{
 
 	displayTitre(title,section){
 		const newDiv =  this.addClassDiv("titre");
-		const newTitle = document.createElement("h1");
-		newTitle.innerHTML = title;
-		newDiv.appendChild(newTitle);
+		this.addTitre(title,newDiv);
 		section.appendChild(newDiv);
 	}
 
-	addParagraph(test,element){
+	addTitre(text,element){
+		const para = document.createElement("h1");
+		para.innerHTML = text;
+		element.appendChild(para);
+	}
+
+	addParagraph(text,element){
 		const para = document.createElement("p");
-		para.innerHTML = test;
+		para.innerHTML = text;
 		element.appendChild(para);
 
 	}
@@ -305,35 +301,48 @@ class Display{
 		return newDiv;
 	}
 
-	displayFilmDetail(e){
+	displayTextDetailFilm(titre,text,element){
+		var old_text = element.innerHTML;
+		element.innerHTML = old_text+(titre+": ").bold()+text;
+		const br = document.createElement("br");
+		element.appendChild(br);
+	}
+
+	closeFilmDetail(modal){
+		const Describemovie = document.getElementById("Describemovie");
+		Describemovie.remove();
+		modal.style.display = "none";
+	}
+
+	displayFilmDetail(e,modal){
 		let target = e.srcElement.alt;
 		let data = this.findDataMovieByTitle(target);
-		if (data) {
-			const aside = document.createElement("asside");
-			aside.classList.add("describemovie");
-			aside.setAttribute("role","dialog");
-			aside.setAttribute("aria-hidden","true");
-			const detail = this.addClassDiv("detail");
-			console.log(data);
-			this.addParagraph("Titre: "+data.title,detail);
-			this.addParagraph("Score Imdb: "+data.imdb_score,detail);
-			this.addParagraph("Genres: "+data.genres,detail);
-			this.addParagraph("Actors: "+data.actors,detail);
-			this.addParagraph("Directors: "+data.directors,detail);
-			this.addParagraph("Date Publiched: "+data.date_published,detail);
-			this.addParagraph("Rated: "+data.rated,detail);
-			this.addParagraph("Duration: "+data.duration,detail);
-			this.addParagraph("Countries: "+data.countries,detail);
-			this.addParagraph("Duration: "+data.duration,detail);
-			this.addParagraph("Reviews from critics: "+data.reviews_from_critics,detail);
-			this.addParagraph("Descripion: "+data.description,detail);
-			aside.appendChild(detail);
-			page.insertBefore(aside,footer);
-		
+		const displayDetail = {
+			"Titre": data.title,
+			"Score Imdb": data.imdb_score,
+			"Genres": data.genres,
+			"Actors": data.actors,
+			"Directors": data.directors,
+			"Date Publiched": data.date_published,
+			"Rated": data.rated,
+			"Duration": data.duration,
+			"Countries": data.countries,
+			"Reviews from critics": data.reviews_from_critics,
+			"Descripion": data.description
 		}
-		//document.getElementById("Films les mieux notés").innerHTML = Date();
-		//tell the browser not to respond to the link click
-		//e.preventDefault();
+		if (data) {
+			modal.style.display = "flex"
+			const div = this.addClassDiv("Describemovie");
+			div.setAttribute("id", "Describemovie");
+			this.displayFilm(data,div);
+			let detail = this.addClassDiv("detail");
+			for(let title in displayDetail){
+				this.displayTextDetailFilm(title, displayDetail[title],detail);
+			}
+			div.appendChild(detail);
+			modal.appendChild(div);
+			page.insertBefore(modal,footer);
+		}
 	}
 
 }
@@ -352,11 +361,17 @@ async function main(){
 		display.displayGenre(data,page);
     }
 
-	// events 
+	let modal = document.getElementById("modal");
+
+	// events windows 
 	document.querySelectorAll(".film").forEach( a => { 
-		//a.addEventListener('click', display.displayFilmDetail(a));
-		a.addEventListener('click', function(e) {display.displayFilmDetail(e)});
-	}) 
+		a.addEventListener('click', function(e) {display.displayFilmDetail(e,modal)});
+
+	});
+	document.querySelectorAll(".close").forEach( 
+		a => { a.addEventListener('click', function() {display.closeFilmDetail(modal)});
+    
+	});
 }
 
 main();
