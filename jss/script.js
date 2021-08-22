@@ -197,7 +197,7 @@ class DataApi{
 
 class Display{
 	constructor(data){
-		this.defaultNbrDisplay = 4;
+		this.defaultNbrMoviesDisplay = 4;
 		this.footer = document.getElementById("footer");
 		this.page = document.getElementById("page");
 		this.modal = document.getElementById("modal");
@@ -224,18 +224,16 @@ class Display{
 
 	}
 
-	displayLelftArrow(newSection,dataGenre){
-		if (dataGenre.data.length > this.defaultNbrDisplay){
+	displayArrow(newSection,dataGenre){
+		// if nbr Movies  > 	defaultNbrMoviesDisplay	
+		if (dataGenre.data.length > this.defaultNbrMoviesDisplay){
+		// Add Left Arrow
 			const lelftArrow = document.createElement("div");
 			lelftArrow.classList.add("arrow__btn");
 			lelftArrow.classList.add("left-arrow");
 			lelftArrow.innerHTML = "<";
 			newSection.appendChild(lelftArrow);
-		}
-	}
-	
-	displayRightArrow(newSection,dataGenre){
-		if (dataGenre.data.length > this.defaultNbrDisplay){
+		// Add Right Arrow
 			const rightArrow = document.createElement("div");
 			rightArrow.classList.add("arrow__btn");
 			rightArrow.classList.add("right-arrow");
@@ -254,7 +252,6 @@ class Display{
 		section.insertBefore(newFilm,rightrow);
 	}	
 
-
 	displayBestMovie (){
 		const newSection = document.createElement("section");
 		newSection.id = "BestFilm";
@@ -270,31 +267,36 @@ class Display{
 		page.insertBefore(newSection,this.footer);
 	}
 
-	displayGenre(dataGenre){
-		let nbr = 0; 
-		const newSection = document.createElement("section");
-		this.displayTitre(dataGenre.genre,newSection);
-		const newDiv = this.addClassDiv("list");
-		newDiv.id = dataGenre.genre;
-		// display arrow
-		this.displayLelftArrow(newDiv,dataGenre);
-		this.displayRightArrow(newDiv,dataGenre);
-		// insert film 
-		for (let dataFilm of dataGenre.data) {
-			nbr +=1 ;
-			// display number default movie
-	
-			if (nbr <= this.defaultNbrDisplay){
-				this.displayFilm(dataFilm,newDiv);
-			} else{
-				break;
+	displayGenre(){
+		// list Film by genre
+		for (let dataGenre of this.data) {
+			let nbr = 0; 
+			// create section
+			const newSection = document.createElement("section");
+			// create Titre section
+			this.displayTitre(dataGenre.genre,newSection);
+			// create List Film
+			const newList = this.addClassDiv("list");
+			newList.id = dataGenre.genre;
+			// Create Arrow
+			this.displayArrow(newList,dataGenre);
+			// insert film in lest 
+			for (let dataFilm of dataGenre.data) {
+				nbr +=1 ;
+				// display default number movie by genre
+				if (nbr <= this.defaultNbrMoviesDisplay){ 
+					this.displayFilm(dataFilm,newList);
+				} else{
+					break;
+				}
 			}
+			// add List to section
+			newSection.appendChild(newList);
+			// add List before footer
+			this.page.insertBefore(newSection,this.footer);
 		}
-		newSection.appendChild(newDiv);
-		this.page.insertBefore(newSection,this.footer);
 	}
 	
-
 	arrayRotate(arr, index) {
 		while(index != 0) {
 			if (index > 0) {
@@ -324,15 +326,13 @@ class Display{
 		for (let dataFilm of datamovies) {
 		 	nbr +=1 ;
 		 	// display number default movie
-		 	if (nbr <= this.defaultNbrDisplay){
+		 	if (nbr <= this.defaultNbrMoviesDisplay){
 		 		this.displayFilm(dataFilm,sectiongenre);
 		 	} else{
 		 		break;
 		 	}
 		}
-		//sectiongenre.appendChild(newDiv);
 	}
-
 
 	displayTitre(title,section){
 		const newDiv =  this.addClassDiv("titre");
@@ -350,8 +350,8 @@ class Display{
 		const para = document.createElement("p");
 		para.innerHTML = text;
 		element.appendChild(para);
-
 	}
+
 	addClassDiv(nameClass){
 		const newDiv =  document.createElement("div");
 		newDiv.classList.add(nameClass);
@@ -372,8 +372,11 @@ class Display{
 	}
 
 	displayFilmDetail(e){
+		// get name film
 		let target = e.srcElement.alt;
+		// get data film
 		let data = this.DataMovieByTitle(target);
+		// Detail Film display 
 		const displayDetail = {
 			"Titre": data.title,
 			"Score Imdb": data.imdb_score,
@@ -407,18 +410,15 @@ class Display{
 function clicfilm(display){
 	// events windows clic open film
 	document.querySelectorAll(".film").forEach( a => { 
-		a.addEventListener('click', function(e) {
-							display.displayFilmDetail(e);
-						}	
+		a.addEventListener('click', function(e){display.displayFilmDetail(e);}	
 		);
 	});
 }
 
 function clicclose(display){
 	// event windows clic close
-	document.querySelectorAll(".close").forEach( 
+	document.querySelectorAll(".close").forEach(
 		a => { a.addEventListener('click', function() {display.closeFilmDetail()});
-    
 	});
 }
 
@@ -441,24 +441,19 @@ function clicarrow(display){
 
 }
 
-
 async function main(){
-
 	// init load
-
 	const dataMovies = await new DataApi().getDataMovies();
 	const display = new Display(dataMovies);
-
-	
-	// display
+	// display Best Movie
 	display.displayBestMovie();
-	for (let datagenre of dataMovies) {
-		// Display list Film by genre
-		display.displayGenre(datagenre);
-    }
-
+	// Display list Film by genre
+	display.displayGenre();
+	// check evenement clic on film
 	clicfilm(display);
+	// check evenement clic on close
 	clicclose(display);
+	// check evenement clic on arrow
 	clicarrow(display);
 }
 
