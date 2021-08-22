@@ -21,6 +21,7 @@ class DataFilm {
 	constructor(genre,data){
 		this.genre = genre;
 		this.data = data;
+		this.index = 0;
 	}
 }
 
@@ -32,8 +33,9 @@ class DataApi{
 		this.urlGenres = this.urlApiOCMovies+this.uriGenres;
 		this.urlTitles = this.urlApiOCMovies+this.uriTitles;
 		this.numberDisplayGenre = 4;
+		this.numberMovieByGenre = 7; 
 		this.genres = new Array(); 
-		this.defaultGenresNumberMovie = {"Best Movies":7};
+		this.defaultGenresNumberMovie = {"Best Movies": this.numberMovieByGenre};
 	}
 
 	async getGenre(url=this.urlGenres, numberpage = 1){
@@ -55,7 +57,7 @@ class DataApi{
 		if (Object.keys(this.defaultGenresNumberMovie).length < this.numberDisplayGenre) {
 			let addGenre  = this.genres[Math.floor((Math.random() * number_genre) + 1)];
 			if (addGenre) { 
-				this.defaultGenresNumberMovie[addGenre]=7;
+				this.defaultGenresNumberMovie[addGenre] = this.numberMovieByGenre;
 			}
 			await this.getGenreDisplay();
 		}
@@ -198,13 +200,13 @@ class Display{
 		this.defaultNbrDisplay = 4;
 		this.footer = document.getElementById("footer");
 		this.page = document.getElementById("page");
+		this.modal = document.getElementById("modal");
 		this.data = data;
-		this.indexDisplay = 0;
 	}
 
-	findDataMovieByTitle(title){
-		for (let genre of this.data) {
-			for (let data_movie of genre.data){
+	DataMovieByTitle(title){
+		for (let datagenre of this.data) {
+			for (let data_movie of datagenre.data){
 				if (data_movie.title === title){
 					return data_movie;
 				} 
@@ -212,8 +214,18 @@ class Display{
 		}
 	}
 
-	displayLelftArrow(newSection,data){
-		if (data.length > this.defaultNbrDisplay){
+	UpdateIndexDataGenreByGenre(genre, index ){
+		for (let datagenre of this.data) {
+			if (datagenre.genre == genre) {
+				datagenre.index = datagenre.index + index
+				return datagenre;
+			}
+		}
+
+	}
+
+	displayLelftArrow(newSection,dataGenre){
+		if (dataGenre.data.length > this.defaultNbrDisplay){
 			const lelftArrow = document.createElement("div");
 			lelftArrow.classList.add("arrow__btn");
 			lelftArrow.classList.add("left-arrow");
@@ -222,8 +234,8 @@ class Display{
 		}
 	}
 	
-	displayRightArrow(newSection,data){
-		if (data.length > this.defaultNbrDisplay){
+	displayRightArrow(newSection,dataGenre){
+		if (dataGenre.data.length > this.defaultNbrDisplay){
 			const rightArrow = document.createElement("div");
 			rightArrow.classList.add("arrow__btn");
 			rightArrow.classList.add("right-arrow");
@@ -232,13 +244,14 @@ class Display{
 		}
 	}
 
-	displayFilm(data,section){
+	displayFilm(datafilm,section){
 		const newFilm = this.addClassDiv("film");
 		const img = document.createElement("img");
-		img.src = data.image_url;
-		img.alt = data.title;
+		const rightrow = section.getElementsByClassName("right-arrow")[0];
+		img.src = datafilm.image_url;
+		img.alt = datafilm.title;
 		newFilm.appendChild(img);
-		section.appendChild(newFilm);
+		section.insertBefore(newFilm,rightrow);
 	}	
 
 
@@ -250,32 +263,76 @@ class Display{
 		const play = document.createElement("button");
 		play.classList.add("button");
 		play.classList.add("play");
-		play.innerHTML = "Lecture";
+		play.innerHTML = "Play";
 		newDiv.appendChild(play);
 		newSection.appendChild(newDiv);
 		this.displayFilm(this.data[0].data[0],newSection);
-		page.insertBefore(newSection,footer);
+		page.insertBefore(newSection,this.footer);
 	}
 
-	displayGenre(dataGenre,page){
+	displayGenre(dataGenre){
 		let nbr = 0; 
 		const newSection = document.createElement("section");
-		newSection.id = dataGenre.genre;
 		this.displayTitre(dataGenre.genre,newSection);
 		const newDiv = this.addClassDiv("list");
-		this.displayLelftArrow(newDiv,dataGenre.data);
-		for (let data of dataGenre.data) {
+		newDiv.id = dataGenre.genre;
+		// display arrow
+		this.displayLelftArrow(newDiv,dataGenre);
+		this.displayRightArrow(newDiv,dataGenre);
+		// insert film 
+		for (let dataFilm of dataGenre.data) {
 			nbr +=1 ;
 			// display number default movie
 	
 			if (nbr <= this.defaultNbrDisplay){
-				this.displayFilm(data,newDiv);
+				this.displayFilm(dataFilm,newDiv);
+			} else{
+				break;
 			}
 		}
-		this.displayRightArrow(newDiv,dataGenre.data);
 		newSection.appendChild(newDiv);
-		page.insertBefore(newSection,footer);
+		this.page.insertBefore(newSection,this.footer);
 	}
+	
+
+	arrayRotate(arr, index) {
+		while(index != 0) {
+			if (index > 0) {
+				arr.unshift(arr.pop());
+				index -= 1;
+			}else {
+				arr.unshift(arr.pop());
+				index +=  1;
+			}
+		}
+		return arr;
+	}
+	  
+
+	updateDisplayGenre(e,index){
+		let nbr = 0;
+		const sectiongenre = e.target.parentNode;
+		const genre = sectiongenre.id;
+		let datagenre = this.UpdateIndexDataGenreByGenre(genre,index);
+		const remove_films = sectiongenre.querySelectorAll('.film');
+		for (let remove_film of remove_films){
+			sectiongenre.removeChild(remove_film);
+		}
+		let datamovies = [].concat(datagenre.data)
+		datamovies = this.arrayRotate(datamovies, datagenre.index)
+
+		for (let dataFilm of datamovies) {
+		 	nbr +=1 ;
+		 	// display number default movie
+		 	if (nbr <= this.defaultNbrDisplay){
+		 		this.displayFilm(dataFilm,sectiongenre);
+		 	} else{
+		 		break;
+		 	}
+		}
+		//sectiongenre.appendChild(newDiv);
+	}
+
 
 	displayTitre(title,section){
 		const newDiv =  this.addClassDiv("titre");
@@ -308,15 +365,15 @@ class Display{
 		element.appendChild(br);
 	}
 
-	closeFilmDetail(modal){
+	closeFilmDetail(){
 		const Describemovie = document.getElementById("Describemovie");
 		Describemovie.remove();
-		modal.style.display = "none";
+		this.modal.style.display = "none";
 	}
 
-	displayFilmDetail(e,modal){
+	displayFilmDetail(e){
 		let target = e.srcElement.alt;
-		let data = this.findDataMovieByTitle(target);
+		let data = this.DataMovieByTitle(target);
 		const displayDetail = {
 			"Titre": data.title,
 			"Score Imdb": data.imdb_score,
@@ -331,7 +388,7 @@ class Display{
 			"Descripion": data.description
 		}
 		if (data) {
-			modal.style.display = "flex"
+			this.modal.style.display = "flex"
 			const div = this.addClassDiv("Describemovie");
 			div.setAttribute("id", "Describemovie");
 			this.displayFilm(data,div);
@@ -341,37 +398,68 @@ class Display{
 			}
 			div.appendChild(detail);
 			modal.appendChild(div);
-			page.insertBefore(modal,footer);
+			page.insertBefore(modal,this.footer);
 		}
 	}
 
 }
 
+function clicfilm(display){
+	// events windows clic open film
+	document.querySelectorAll(".film").forEach( a => { 
+		a.addEventListener('click', function(e) {
+							display.displayFilmDetail(e);
+						}	
+		);
+	});
+}
+
+function clicclose(display){
+	// event windows clic close
+	document.querySelectorAll(".close").forEach( 
+		a => { a.addEventListener('click', function() {display.closeFilmDetail()});
+    
+	});
+}
+
+function clicarrow(display){
+	// event windwos clic right-arrow
+	document.querySelectorAll(".right-arrow").forEach( 
+		a => { a.addEventListener('click', function(e) { 
+			display.updateDisplayGenre(e,1);
+			clicfilm(display);
+		});
+	});
+		
+	// event windwos clic left-arrow
+	document.querySelectorAll(".left-arrow").forEach( 
+		a => { a.addEventListener('click', function(e) {
+			display.updateDisplayGenre(e,-1);
+			clicfilm(display);		
+		});
+	});
+
+}
+
+
 async function main(){
 
 	// init load
-	const data = new DataApi();
-	dataMovies = await data.getDataMovies();
-	const display = new Display(dataMovies)
 
+	const dataMovies = await new DataApi().getDataMovies();
+	const display = new Display(dataMovies);
+
+	
 	// display
 	display.displayBestMovie();
-	for (let data of dataMovies) {
-		// Display list Film
-		display.displayGenre(data,page);
+	for (let datagenre of dataMovies) {
+		// Display list Film by genre
+		display.displayGenre(datagenre);
     }
 
-	let modal = document.getElementById("modal");
-
-	// events windows 
-	document.querySelectorAll(".film").forEach( a => { 
-		a.addEventListener('click', function(e) {display.displayFilmDetail(e,modal)});
-
-	});
-	document.querySelectorAll(".close").forEach( 
-		a => { a.addEventListener('click', function() {display.closeFilmDetail(modal)});
-    
-	});
+	clicfilm(display);
+	clicclose(display);
+	clicarrow(display);
 }
 
 main();
