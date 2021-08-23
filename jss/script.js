@@ -34,37 +34,45 @@ class DataApi{
 		this.urlTitles = this.urlApiOCMovies+this.uriTitles;
 		this.numberDisplayGenre = 4;
 		this.numberMovieByGenre = 7; 
-		this.genres = new Array(); 
+		this.genresDisplay = new Array(); 
 		this.defaultGenresNumberMovie = {"Best Movies": this.numberMovieByGenre};
 	}
 
 	async getGenre(url=this.urlGenres, numberpage = 1){
 		// search for all genres available on API
+		// return all genres
 		let data = await this.getData(url+"?page="+numberpage);
 		for (let genre of data.results){
-			this.genres.push(genre.name);
+			// add genre to this.genresDisplay
+			this.genresDisplay.push(genre.name);
 		}
-		const max_page = this.maxPage(data);
+		// cacul last page 
+		const max_page = this.lastPage(data);
+		// if not last page => this.getGenre(url,  numberpage+1)
 		if (numberpage < max_page){
 			numberpage += 1;
 			await this.getGenre(url,  numberpage);
 		}
-		return this.genres;
+		return this.genresDisplay;
 	}
 
 	async getGenreDisplay(){
-		const number_genre = this.genres.length
+		// select the genres that will be displayed 
+		const number_genre = this.genresDisplay.length
 		if (Object.keys(this.defaultGenresNumberMovie).length < this.numberDisplayGenre) {
-			let addGenre  = this.genres[Math.floor((Math.random() * number_genre) + 1)];
+			// get genre randowm from this.genresDisplay
+			// add genre to defaultGenresNumberMovie
+			let addGenre  = this.genresDisplay[Math.floor((Math.random() * number_genre) + 1)];
 			if (addGenre) { 
+				// add genre to  defaultGenresNumberMovie
 				this.defaultGenresNumberMovie[addGenre] = this.numberMovieByGenre;
 			}
 			await this.getGenreDisplay();
 		}
 	}
 
-	maxPage(data){
-		// return the number of the last page 
+	lastPage(data){
+		// return the number of the last page in API
 		const numberResultByPage = 5;
 		let numberPages = 1;
 		if (data.next = null ) {
@@ -86,7 +94,7 @@ class DataApi{
 		} 
 		// if genre present in this.genres  return 'UrlSearch+'&genre='+genre'
 		// else return UrlSearch
-		if (this.genres.includes(genre)){
+		if (this.genresDisplay.includes(genre)){
 			return urlSearch+'&genre='+genre;
 		} else {
 			return urlSearch;
@@ -134,6 +142,7 @@ class DataApi{
 	}
 
 	async addDetailFilm(data){
+		// get data Film from id film
 		let detail = await this.getData(this.urlTitles+data.id);
 		return new Film(data,detail);
 	}
@@ -142,7 +151,7 @@ class DataApi{
 		let arrayDataMovie = new Array();
 		let urlgenre = await this.createUrlSearchApi(genre);
 		let data = await this.getData(urlgenre);
-		let max_page = this.maxPage(data);
+		let max_page = this.lastPage(data);
 		// While NumberMovie > ArrayDataMovie.length and NumberPages > 0 get data Movie from Api 
 		while (numberMovie > arrayDataMovie.length && max_page > 0 ){
 			const urlpages = urlgenre+'&page='+max_page;

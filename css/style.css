@@ -81,21 +81,10 @@ header {
       font-size: 3em; 
       background:rgb(0,0,0);
       text-align: center;
-      /* width: 80%;*/
-      /* position: absolute; */
       width: auto;
       margin-top: auto;
       margin-bottom: auto;
       padding: 40px;
-    }
-
-.left-arrow {
-     /* border: 1px solid red; */
-     background: linear-gradient(-90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
-}
-    
-.right-arrow {
-     background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
 }
 
 .Logo{
@@ -124,19 +113,16 @@ button {
 #Describemovie{
     position: fixed;
     display: flex;
+    justify-content: space-around;
     align-items: center;
-    justify-content: center;
     top: 30px;
     width: 75%; 
     background: rgba(50, 50, 50);
 }
 
 .detail{
-    height: 50%;
-    padding: 20px;
-    width: 60%;
+    width: 65%;
     font-size: 1vw;
-    margin: 5%;
 }
 
 b {
