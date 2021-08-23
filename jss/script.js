@@ -8,12 +8,14 @@ class Film {
 		this.imdb_score = data.imdb_score;
 		this.title = data.title;
 		this.writers = data.writers;
-		this.date_published = detail.date_published;
-		this.duration = detail.duration;
-		this.rated = detail.rated;
-		this.countries = detail.countries;
-		this.reviews_from_critics = detail.reviews_from_critics;
-		this.description = detail.description;
+		if (detail) {
+			this.date_published = detail.date_published;
+			this.duration = detail.duration;
+			this.rated = detail.rated;
+			this.countries = detail.countries;
+			this.reviews_from_critics = detail.reviews_from_critics;
+			this.description = detail.description;
+		}
 	}
 }
 
@@ -101,50 +103,13 @@ class DataApi{
 		}
 	}
 
-	async getdatafilmsynchro(data){
-		let numberMovie = data.length
-		let datamovies = new Array(numberMovie);
-		switch(numberMovie)
-		{
-			case 1:
-				datamovies = [ await this.addDetailFilm(data[numberMovie-1])];
-				break;
-			case 2:
-				datamovies = [await this.addDetailFilm(data[numberMovie-2]),await this.addDetailFilm(data[numberMovie-1])];
-				break;
-			case 3:
-				datamovies = [
-					await this.addDetailFilm(data[numberMovie-3]),
-					await this.addDetailFilm(data[numberMovie-2]),
-					await this.addDetailFilm(data[numberMovie-1])
-				];
-				break;
-			case 4:
-				datamovies = [
-					await this.addDetailFilm(data[numberMovie-4]),
-					await this.addDetailFilm(data[numberMovie-3]),
-					await this.addDetailFilm(data[numberMovie-2]),
-					await this.addDetailFilm(data[numberMovie-1])
-				];
-				break;
-			default:
-				datamovies = [
-					await this.addDetailFilm(data[numberMovie-5]),
-					await this.addDetailFilm(data[numberMovie-4]),
-					await this.addDetailFilm(data[numberMovie-3]),
-					await this.addDetailFilm(data[numberMovie-2]),
-					await this.addDetailFilm(data[numberMovie-1])
-				];
-				break;
-
-		}
-		return datamovies;
-	}
-
-	async addDetailFilm(data){
+	async detailFilm(data){
 		// get data Film from id film
-		let detail = await this.getData(this.urlTitles+data.id);
-		return new Film(data,detail);
+		return await this.getData(this.urlTitles+data.id);
+	}
+	
+	static async addDetailFilm(data,detail){
+		const test  = new Film(data,detail);
 	}
 
 	async getDataBestMovieByGenre(numberMovie, genre){
@@ -156,9 +121,10 @@ class DataApi{
 		while (numberMovie > arrayDataMovie.length && max_page > 0 ){
 			const urlpages = urlgenre+'&page='+max_page;
 			data = await this.getData(urlpages);
-			// Add data Movie from page NumberPages in ArrayDataMovie
-			const clone_array = [].concat(arrayDataMovie);
-			arrayDataMovie = clone_array.concat( await this.getdatafilmsynchro(data.results));
+			for (let result  of data.results){
+				// push data film  to arrayDataMovie
+				arrayDataMovie.push( new Film(result,false));
+			}
 			// Select Pages next
 			max_page -= 1;
 		}
@@ -178,15 +144,9 @@ class DataApi{
 		// add genreDisplay if nbr is < numberDisplayGenre
 		await this.getGenreDisplay();
 		// load best movie by genre
-		let GenresNumberMovie = this.defaultGenresNumberMovie;
-		let keys = Object.keys(GenresNumberMovie);
-		data = [ 
-			await this.getDataBestMovieByGenre(GenresNumberMovie[keys[0]],keys[0]),
-			await this.getDataBestMovieByGenre(GenresNumberMovie[keys[1]],keys[1]),
-			await this.getDataBestMovieByGenre(GenresNumberMovie[keys[2]],keys[2]),
-			await this.getDataBestMovieByGenre(GenresNumberMovie[keys[3]],keys[3]),
-
-		]
+		for (let genre in this.defaultGenresNumberMovie){
+			data.push(await this.getDataBestMovieByGenre(this.defaultGenresNumberMovie[genre],genre));
+		} 
 		return data;
 	}
 
@@ -319,7 +279,6 @@ class Display{
 		return arr;
 	}
 	  
-
 	updateDisplayGenre(e,index){
 		let nbr = 0;
 		const sectiongenre = e.target.parentNode;
@@ -376,7 +335,9 @@ class Display{
 
 	closeFilmDetail(){
 		const Describemovie = document.getElementById("Describemovie");
+		// remove elements in modal
 		Describemovie.remove();
+		// set display off
 		this.modal.style.display = "none";
 	}
 
@@ -384,42 +345,48 @@ class Display{
 		// get name film
 		let target = e.srcElement.alt;
 		// get data film
-		let data = this.DataMovieByTitle(target);
-		// Detail Film display 
-		const displayDetail = {
-			"Titre": data.title,
-			"Score Imdb": data.imdb_score,
-			"Genres": data.genres,
-			"Actors": data.actors,
-			"Directors": data.directors,
-			"Date Publiched": data.date_published,
-			"Rated": data.rated,
-			"Duration": data.duration,
-			"Countries": data.countries,
-			"Reviews from critics": data.reviews_from_critics,
-			"Descripion": data.description
-		}
-		if (data) {
-			this.modal.style.display = "flex"
-			const div = this.addClassDiv("Describemovie");
-			div.setAttribute("id", "Describemovie");
-			this.displayFilm(data,div);
-			let detail = this.addClassDiv("detail");
-			for(let title in displayDetail){
-				this.displayTextDetailFilm(title, displayDetail[title],detail);
+		let dataMovie = this.DataMovieByTitle(target);
+		// get all data film end display
+	    new DataApi().detailFilm(dataMovie).then( e => { 
+			const allDataMovie = new Film(dataMovie,e);
+			if (allDataMovie) {
+				// Set title for  display
+				const displayDetail = {
+					"Titre": allDataMovie.title,
+					"Score Imdb": allDataMovie.imdb_score,
+					"Genres": allDataMovie.genres,
+					"Actors": allDataMovie.actors,
+					"Directors": allDataMovie.directors,
+					"Date Publiched": allDataMovie.date_published,
+					"Rated": allDataMovie.rated,
+					"Duration": allDataMovie.duration,
+					"Countries": allDataMovie.countries,
+					"Reviews from critics": allDataMovie.reviews_from_critics,
+					"Descripion": allDataMovie.description
+				}
+				// display modal
+				this.modal.style.display = "flex"
+				const div = this.addClassDiv("Describemovie");
+				div.setAttribute("id", "Describemovie");
+				this.displayFilm(allDataMovie,div);
+				let detail = this.addClassDiv("detail");
+				for(let title in displayDetail){
+					this.displayTextDetailFilm(title, displayDetail[title],detail);
+				}
+				div.appendChild(detail);
+				modal.appendChild(div);
+				page.insertBefore(modal,this.footer);
 			}
-			div.appendChild(detail);
-			modal.appendChild(div);
-			page.insertBefore(modal,this.footer);
-		}
+		});
 	}
-
 }
 
 function clicfilm(display){
 	// events windows clic open film
 	document.querySelectorAll(".film").forEach( a => { 
-		a.addEventListener('click', function(e){display.displayFilmDetail(e);}	
+		a.addEventListener('click', function(e){
+			display.displayFilmDetail(e)
+			}	
 		);
 	});
 }
