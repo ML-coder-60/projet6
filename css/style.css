@@ -16,6 +16,10 @@ a:link {
     text-decoration:none;   /* Supp  le soulignement des liens Html */
     color: inherit;         /* force la couleur des liens avec la couleur défini dans body  */
 }
+a:visited {
+    text-decoration:none;   /* Supp  le soulignement des liens Html */
+    color: inherit;         /* force la couleur des liens avec la couleur défini dans body  */
+}
 
 nav ul {
     display: flex;
