@@ -108,10 +108,6 @@ class DataApi{
 		return await this.getData(this.urlTitles+data.id);
 	}
 	
-	static async addDetailFilm(data,detail){
-		const test  = new Film(data,detail);
-	}
-
 	async getDataBestMovieByGenre(numberMovie, genre){
 		let arrayDataMovie = new Array();
 		let urlgenre = await this.createUrlSearchApi(genre);
@@ -349,34 +345,32 @@ class Display{
 		// get all data film end display
 	    new DataApi().detailFilm(dataMovie).then( e => { 
 			const allDataMovie = new Film(dataMovie,e);
-			if (allDataMovie) {
-				// Set title for  display
-				const displayDetail = {
-					"Titre": allDataMovie.title,
-					"Score Imdb": allDataMovie.imdb_score,
-					"Genres": allDataMovie.genres,
-					"Actors": allDataMovie.actors,
-					"Directors": allDataMovie.directors,
-					"Date Publiched": allDataMovie.date_published,
-					"Rated": allDataMovie.rated,
-					"Duration": allDataMovie.duration,
-					"Countries": allDataMovie.countries,
-					"Reviews from critics": allDataMovie.reviews_from_critics,
-					"Descripion": allDataMovie.description
-				}
-				// display modal
-				this.modal.style.display = "flex"
-				const div = this.addClassDiv("Describemovie");
-				div.setAttribute("id", "Describemovie");
-				this.displayFilm(allDataMovie,div);
-				let detail = this.addClassDiv("detail");
-				for(let title in displayDetail){
-					this.displayTextDetailFilm(title, displayDetail[title],detail);
-				}
-				div.appendChild(detail);
-				modal.appendChild(div);
-				page.insertBefore(modal,this.footer);
+			// Set title for  display
+			const displayDetail = {
+				"Titre": allDataMovie.title,
+				"Score Imdb": allDataMovie.imdb_score,
+				"Genres": allDataMovie.genres,
+				"Actors": allDataMovie.actors,
+				"Directors": allDataMovie.directors,
+				"Date Publiched": allDataMovie.date_published,
+				"Rated": allDataMovie.rated,
+				"Duration": allDataMovie.duration,
+				"Countries": allDataMovie.countries,
+				"Reviews from critics": allDataMovie.reviews_from_critics,
+				"Descripion": allDataMovie.description
 			}
+			// display modal
+			this.modal.style.display = "flex"
+			const div = this.addClassDiv("Describemovie");
+			div.setAttribute("id", "Describemovie");
+			this.displayFilm(allDataMovie,div);
+			let detail = this.addClassDiv("detail");
+			for(let title in displayDetail){
+				this.displayTextDetailFilm(title, displayDetail[title],detail);
+			}
+			div.appendChild(detail);
+			modal.appendChild(div);
+			page.insertBefore(modal,this.footer);
 		});
 	}
 }
